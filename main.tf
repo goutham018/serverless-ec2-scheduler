@@ -3,35 +3,25 @@ provider "aws" {
 }
 
 resource "aws_instance" "example" {
-  ami                         = "ami-0e35ddab05955cf57" # Update as needed per region
-  instance_type               = "t2.micro"
-  associate_public_ip_address = true
-
+  ami           = "ami-0c55b159cbfafe1f0" # Replace with your AMI ID
+  instance_type = "t2.micro"
   tags = {
-    Name = "EC2-Scheduled-Instance"
+    Name = "ExampleInstance"
   }
 }
 
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/lambda_function"
-  output_path = "${path.module}/lambda_function_payload.zip"
-}
-
 module "start_instance" {
-  source          = "./modules/lambda_scheduler"
-  name_prefix     = "start"
-  lambda_zip_path = data.archive_file.lambda_zip.output_path
-  schedule        = "cron(0 8 * * ? *)" # 8 AM UTC
-  instance_ids    = [aws_instance.example.id]
-  action          = "start"
+  source              = "./lambda_function_payload"
+  lambda_name         = "StartEC2InstanceLambda"
+  schedule_expression = "cron(30 2 * * ? *)" # 8:00 AM IST (2:30 UTC)
+  instance_ids        = [aws_instance.example.id]
+  action              = "start"
 }
 
 module "stop_instance" {
-  source          = "./modules/lambda_scheduler"
-  name_prefix     = "stop"
-  lambda_zip_path = data.archive_file.lambda_zip.output_path
-  schedule        = "cron(0 17 * * ? *)" # 5 PM UTC
-  instance_ids    = [aws_instance.example.id]
-  action          = "stop"
+  source              = "./lambda_function_payload"
+  lambda_name         = "StopEC2InstanceLambda"
+  schedule_expression = "cron(30 11 * * ? *)" # 5:00 PM IST (11:30 UTC)
+  instance_ids        = [aws_instance.example.id]
+  action              = "stop"
 }
