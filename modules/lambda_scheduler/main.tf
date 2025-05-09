@@ -29,7 +29,7 @@ resource "aws_lambda_function" "scheduler" {
   runtime       = "python3.9"
   timeout       = 10
 
-  filename      = "${path.module}/lambda_function_payload.zip"
+  filename      = "./lambda_function_payload.zip"
 
   environment {
     variables = {
@@ -40,9 +40,11 @@ resource "aws_lambda_function" "scheduler" {
 }
 
 resource "aws_cloudwatch_event_rule" "schedule" {
-  name                = "${var.lambda_name}-rule"
-  schedule_expression = var.schedule_expression
+  name                = "${var.lambda_name}-schedule"
+  description         = "Trigger Lambda function on schedule"
+  schedule_expression = var.schedule_expression  # e.g., "cron(0 8 * * ? *)"
 }
+
 
 resource "aws_cloudwatch_event_target" "lambda_target" {
   rule      = aws_cloudwatch_event_rule.schedule.name
@@ -56,4 +58,10 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   function_name = aws_lambda_function.scheduler.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.schedule.arn
+}
+
+resource "aws_cloudwatch_event_target" "lambda_trigger" {
+  rule      = aws_cloudwatch_event_rule.schedule.name
+  target_id = "lambda"
+  arn       = aws_lambda_function.scheduler.arn
 }
